@@ -192,7 +192,7 @@
     color: var(--accent);
     transition: color 0.8s ease;
   }
-  /* When a phase ends the ring fills into a solid circle and waits for Ready? */
+  /* When a phase ends the ring fills into a solid circle and waits for the ready button */
   .ring-fill {
     fill: var(--accent);
     opacity: 0;
@@ -384,7 +384,7 @@
           <input class="time time-input" id="timeInput" type="text" inputmode="numeric" hidden
                  autocomplete="off" spellcheck="false" aria-label="Timer length in hours, minutes and seconds">
           <div class="phase-label" id="phaseLabel">Focus</div>
-          <button class="btn ready-btn" id="readyBtn" type="button">Ready?</button>
+          <button class="btn ready-btn" id="readyBtn" type="button">Break time!</button>
         </div>
       </div>
 
@@ -434,6 +434,7 @@
   const ringEl = document.getElementById('ring');
   const ringHeadEl = document.getElementById('ringHead');
   const toggleBtn = document.getElementById('toggleBtn');
+  const readyBtn = document.getElementById('readyBtn');
   const dotsEl = document.getElementById('dots');
   const sessionTextEl = document.getElementById('sessionText');
   const phaseButtons = document.querySelectorAll('#phases button');
@@ -445,7 +446,7 @@
     running: false,
     completedFocus: 0,
     intervalId: null,
-    awaitingNext: null,   // the phase to start once Ready? is pressed, after one ends
+    awaitingNext: null,   // the phase to start once the ready button is pressed, after one ends
     // Length of each phase in ms; starts from PHASES and can be changed by clicking the time.
     durations: Object.fromEntries(Object.entries(PHASES).map(([k, p]) => [k, p.minutes * 60000])),
   };
@@ -491,6 +492,7 @@
     document.body.dataset.phase = state.phase;
     document.body.classList.toggle('running', state.running);
     document.body.classList.toggle('ready', state.awaitingNext !== null);
+    readyBtn.textContent = state.phase === 'focus' ? 'Break time!' : 'Work time!';
     document.title = `${text} · ${PHASES[state.phase].label}`;
 
     phaseButtons.forEach(b => b.classList.toggle('active', b.dataset.phase === state.phase));
@@ -533,9 +535,11 @@
     render();
   }
 
-  function nextPhaseAfter(phase) {
+  // sessionNumber is which focus session (counting from 1) the phase belongs
+  // to; every SESSIONS_PER_CYCLE-th one is followed by the long break.
+  function nextPhaseAfter(phase, sessionNumber) {
     if (phase !== 'focus') return 'focus';
-    return state.completedFocus % SESSIONS_PER_CYCLE === 0 ? 'long' : 'short';
+    return sessionNumber % SESSIONS_PER_CYCLE === 0 ? 'long' : 'short';
   }
 
   // Remaining time is derived from the wall clock, so throttled background
@@ -549,7 +553,7 @@
     }
   }
 
-  // The finished phase stays on screen as a filled circle until Ready? is
+  // The finished phase stays on screen as a filled circle until the ready button is
   // pressed; only then does the next phase load and start.
   function completePhase() {
     const finished = state.phase;
@@ -557,7 +561,7 @@
     playChime(finished);
     pauseTimer();
     state.remainingMs = 0;
-    state.awaitingNext = nextPhaseAfter(finished);
+    state.awaitingNext = nextPhaseAfter(finished, state.completedFocus);   // already counts this one
     render();
   }
 
@@ -566,9 +570,11 @@
     startTimer();
   }
 
-  // Start/Pause, or Ready? while a finished phase is waiting.
+  // Start/Pause, or the ready button while a finished phase is waiting.
+  // While a new time is being typed, Start applies it and starts.
   function toggleTimer() {
-    if (state.awaitingNext) startNextPhase();
+    if (edit) commitEdit(true);
+    else if (state.awaitingNext) startNextPhase();
     else if (state.running) pauseTimer();
     else startTimer();
   }
@@ -646,7 +652,8 @@
   }
 
   // Applies the typed length to the current phase, so Reset comes back to it too.
-  function commitEdit() {
+  // Resumes the timer if it was running before the edit, unless told otherwise.
+  function commitEdit(resume = edit?.wasRunning) {
     if (!edit) return;
     const ms = digitsToMs(edit.digits);
     if (ms < 1000) {
@@ -657,7 +664,7 @@
     }
     state.durations[state.phase] = ms;
     state.remainingMs = ms;
-    closeEditor(edit.wasRunning);
+    closeEditor(resume);
   }
 
   function cancelEdit() {
@@ -823,9 +830,14 @@
 
   /* ---------- Timer controls ---------- */
   toggleBtn.addEventListener('click', toggleTimer);
-  document.getElementById('readyBtn').addEventListener('click', startNextPhase);
+  // Keep focus in the time box when pressing Start mid-edit. Otherwise the box's
+  // blur would commit and resume the timer first, and the click would then pause it.
+  toggleBtn.addEventListener('mousedown', e => { if (edit) e.preventDefault(); });
+  readyBtn.addEventListener('click', startNextPhase);
   document.getElementById('resetBtn').addEventListener('click', () => setPhase(state.phase));
-  document.getElementById('skipBtn').addEventListener('click', () => setPhase(nextPhaseAfter(state.phase)));
+  // A skipped session isn't counted as completed, but it still takes its place in the cycle.
+  document.getElementById('skipBtn').addEventListener('click', () =>
+    setPhase(nextPhaseAfter(state.phase, state.completedFocus + 1)));
   phaseButtons.forEach(b => b.addEventListener('click', () => setPhase(b.dataset.phase)));
 
   document.addEventListener('keydown', e => {
