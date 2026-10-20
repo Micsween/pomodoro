@@ -192,6 +192,30 @@
     color: var(--accent);
     transition: color 0.8s ease;
   }
+  /* When a phase ends the ring fills into a solid circle and waits for Ready? */
+  .ring-fill {
+    fill: var(--accent);
+    opacity: 0;
+    transform: scale(0.6);
+    transform-origin: 160px 160px;
+    transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.2), fill 0.8s ease;
+    filter: drop-shadow(0 0 18px var(--accent));
+    pointer-events: none;
+  }
+  body.ready .ring-fill { opacity: 1; transform: scale(1); }
+  body.ready .ring-handle, body.ready .ring-hit { display: none; }
+  body.ready .time, body.ready .phase-label { display: none; }
+  .btn.ready-btn {
+    display: none;
+    pointer-events: auto;
+    background: #2a2936;
+    font-size: 16px;
+    padding: 12px 26px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  }
+  .btn.ready-btn:hover { background: #353443; }
+  body.ready .ready-btn { display: block; }
+
   body.running .time { animation: breathe 4s ease-in-out infinite; }
   @keyframes breathe {
     0%, 100% { opacity: 1; }
@@ -348,6 +372,7 @@
           </defs>
           <circle class="ring-track" cx="160" cy="160" r="140" />
           <circle class="ring-progress" id="ring" cx="160" cy="160" r="140" />
+          <circle class="ring-fill" cx="160" cy="160" r="145" />
           <circle class="ring-hit" cx="160" cy="160" r="140" />
           <g class="ring-handle" id="ringHead">
             <circle class="ring-handle-hit" cx="300" cy="160" r="22" />
@@ -359,6 +384,7 @@
           <input class="time time-input" id="timeInput" type="text" inputmode="numeric" hidden
                  autocomplete="off" spellcheck="false" aria-label="Timer length in hours, minutes and seconds">
           <div class="phase-label" id="phaseLabel">Focus</div>
+          <button class="btn ready-btn" id="readyBtn" type="button">Ready?</button>
         </div>
       </div>
 
@@ -419,6 +445,7 @@
     running: false,
     completedFocus: 0,
     intervalId: null,
+    awaitingNext: null,   // the phase to start once Ready? is pressed, after one ends
     // Length of each phase in ms; starts from PHASES and can be changed by clicking the time.
     durations: Object.fromEntries(Object.entries(PHASES).map(([k, p]) => [k, p.minutes * 60000])),
   };
@@ -463,6 +490,7 @@
     toggleBtn.textContent = state.running ? 'Pause' : 'Start';
     document.body.dataset.phase = state.phase;
     document.body.classList.toggle('running', state.running);
+    document.body.classList.toggle('ready', state.awaitingNext !== null);
     document.title = `${text} · ${PHASES[state.phase].label}`;
 
     phaseButtons.forEach(b => b.classList.toggle('active', b.dataset.phase === state.phase));
@@ -499,6 +527,7 @@
 
   function setPhase(phase) {
     pauseTimer();
+    state.awaitingNext = null;
     state.phase = phase;
     state.remainingMs = phaseDurationMs(phase);
     render();
@@ -520,28 +549,28 @@
     }
   }
 
+  // The finished phase stays on screen as a filled circle until Ready? is
+  // pressed; only then does the next phase load and start.
   function completePhase() {
     const finished = state.phase;
     if (finished === 'focus') state.completedFocus++;
-    const next = nextPhaseAfter(finished);
-    playChime();
-    setPhase(next);          // loads the next phase, paused
-    onPhaseComplete(finished, next);
+    playChime(finished);
+    pauseTimer();
+    state.remainingMs = 0;
+    state.awaitingNext = nextPhaseAfter(finished);
+    render();
   }
 
-  /**
-   * Called once each time a phase's countdown reaches zero. By the time this
-   * runs the chime has played and the next phase is loaded but PAUSED.
-   *
-   * @param {'focus'|'short'|'long'} finishedPhase  the phase that just ended
-   * @param {'focus'|'short'|'long'} nextPhase      the phase now on screen
-   *
-   * Call startTimer() to begin the next phase automatically, or do nothing to
-   * wait for the Start button. state.completedFocus is available if you want
-   * the behaviour to depend on how many sessions are done.
-   */
-  function onPhaseComplete(finishedPhase, nextPhase) {
+  function startNextPhase() {
+    setPhase(state.awaitingNext);
     startTimer();
+  }
+
+  // Start/Pause, or Ready? while a finished phase is waiting.
+  function toggleTimer() {
+    if (state.awaitingNext) startNextPhase();
+    else if (state.running) pauseTimer();
+    else startTimer();
   }
 
   /* ---------- Click the time to type a new length ---------- */
@@ -737,7 +766,21 @@
   ringSvg.addEventListener('pointerup', endDrag);
   ringSvg.addEventListener('pointercancel', endDrag);
 
-  /* ---------- Chime (Web Audio, no sound file needed) ---------- */
+  /* ---------- Chimes ---------- */
+  // Focus sessions end with a wind chime recording; breaks end with a short
+  // synthesized chime (also the fallback if the recording can't play).
+  // An <audio> element is used rather than fetch(), which file:// pages can't do.
+  const focusChime = new Audio('sounds/windchime.mp3');
+  focusChime.preload = 'auto';
+  const FOCUS_CHIME_SECONDS = 3;   // the recording runs 12 s; cut it here
+  const FOCUS_CHIME_FADE = 1;      // fade out over the last 1 s so it doesn't clip
+
+  // timeupdate keeps firing in background tabs, unlike throttled timers.
+  focusChime.addEventListener('timeupdate', () => {
+    const left = FOCUS_CHIME_SECONDS - focusChime.currentTime;
+    if (left <= 0) focusChime.pause();
+    else focusChime.volume = Math.min(1, left / FOCUS_CHIME_FADE);
+  });
   let audioCtx = null;
 
   // Browsers only allow audio after a user gesture, so this is called from Start.
@@ -750,7 +793,17 @@
     }
   }
 
-  function playChime() {
+  function playChime(finishedPhase) {
+    if (finishedPhase === 'focus') {
+      focusChime.currentTime = 0;
+      focusChime.volume = 1;
+      focusChime.play().catch(playSynthChime);
+    } else {
+      playSynthChime();
+    }
+  }
+
+  function playSynthChime() {
     if (!audioCtx) return;
     const now = audioCtx.currentTime;
     [660, 880, 1320].forEach((freq, i) => {
@@ -769,7 +822,8 @@
   }
 
   /* ---------- Timer controls ---------- */
-  toggleBtn.addEventListener('click', () => state.running ? pauseTimer() : startTimer());
+  toggleBtn.addEventListener('click', toggleTimer);
+  document.getElementById('readyBtn').addEventListener('click', startNextPhase);
   document.getElementById('resetBtn').addEventListener('click', () => setPhase(state.phase));
   document.getElementById('skipBtn').addEventListener('click', () => setPhase(nextPhaseAfter(state.phase)));
   phaseButtons.forEach(b => b.addEventListener('click', () => setPhase(b.dataset.phase)));
@@ -778,7 +832,7 @@
     if (e.code !== 'Space') return;
     if (e.target.closest('input, textarea, button, video, [contenteditable]')) return;
     e.preventDefault();
-    state.running ? pauseTimer() : startTimer();
+    toggleTimer();
   });
 
   /* =====================================================================
