@@ -273,7 +273,9 @@
   }
 
   /* ---------- Viewer ---------- */
+  /* Opaque version of the panel tint, so the glow blobs don't show through */
   .viewer {
+    background: color-mix(in srgb, #fff 4.5%, var(--bg-0));
     display: flex;
     flex-direction: column;
     padding: 18px;
