@@ -229,6 +229,67 @@
      tints over the gradient and fades in, which a gradient background can't. */
   .btn.primary:hover { box-shadow: inset 0 0 0 999px rgba(0, 0, 0, 0.2); }
 
+  /* Gear in the timer panel's bottom-left corner */
+  .timer { position: relative; }
+  .settings-btn {
+    position: absolute;
+    left: 14px;
+    bottom: 14px;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.25s;
+  }
+  .settings-btn:hover, .settings-btn[aria-expanded="true"] { color: var(--text); }
+  .settings-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+  .settings-btn svg { width: 22px; height: 22px; fill: currentColor; }
+
+  /* Card that opens above the gear */
+  .settings-pop {
+    position: absolute;
+    left: 14px;
+    bottom: 54px;
+    z-index: 5;
+    width: min(280px, calc(100% - 28px));
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+    background: color-mix(in srgb, #fff 6%, var(--bg-0));
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  }
+  .settings-pop[hidden] { display: none; }
+  .settings-title {
+    font-size: 12px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  /* Label and percentage on one line, slider full width underneath */
+  .slider-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px 10px;
+    font-size: 13px;
+  }
+  .slider-row output { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .slider-row input {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
   .sessions {
     display: flex;
     flex-direction: column;
@@ -285,18 +346,13 @@
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
   }
 
-  /* Toggle on the left, status text after it; capped at 18px so the stage keeps its size */
-  .status-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 18px;
-  }
-  .status { flex: 1; min-height: 18px; font-size: 13px; color: var(--muted); }
+  .status { min-height: 18px; font-size: 13px; color: var(--muted); }
   .status.error { color: #ff7a7a; }
 
   /* ---------- Toggle ---------- */
-  .toggle-label { flex: none; font-size: 13px; line-height: 18px; color: var(--muted); cursor: pointer; user-select: none; }
+  /* Label above the toggle, like the sliders */
+  .toggle-row { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+  .toggle-label { font-size: 13px; line-height: 18px; white-space: nowrap; cursor: pointer; user-select: none; }
   .toggle {
     position: relative;
     flex: none;
@@ -431,6 +487,38 @@
         <div class="dots" id="dots"></div>
         <div id="sessionText">0 focus sessions completed</div>
       </div>
+
+      <div class="settings-pop" id="settingsPop" hidden>
+        <div class="settings-title">Settings</div>
+        <label class="slider-row">
+          <span>Alarm volume</span>
+          <output id="alarmVolumeOut"></output>
+          <input type="range" id="alarmVolume" min="0" max="100" step="1">
+        </label>
+        <label class="slider-row">
+          <span>Video volume</span>
+          <output id="videoVolumeOut"></output>
+          <input type="range" id="videoVolume" min="0" max="100" step="1">
+        </label>
+        <div class="toggle-row">
+          <label class="toggle-label" for="viewerToggle">Pause video between timers</label>
+          <label class="toggle">
+            <input type="checkbox" id="viewerToggle">
+            <span class="track"></span>
+            <span class="knob">
+              <svg class="icon-off" viewBox="0 0 8 8"><path d="M1 1l6 6M7 1L1 7"/></svg>
+              <svg class="icon-on" viewBox="0 0 8 8"><path d="M1 4.2l2 2L7 1.5"/></svg>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <button class="settings-btn" id="settingsBtn" type="button" aria-label="Settings"
+              aria-expanded="false" aria-controls="settingsPop">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path fill-rule="evenodd" d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1zM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 1 0 0-7z"/>
+        </svg>
+      </button>
     </section>
 
     <section class="panel viewer">
@@ -440,18 +528,7 @@
         <button class="btn primary" type="submit">Load</button>
         <button class="btn" type="button" id="clearBtn">Clear</button>
       </form>
-      <div class="status-row">
-        <label class="toggle-label" for="viewerToggle">Pause video between timers</label>
-        <label class="toggle">
-          <input type="checkbox" id="viewerToggle">
-          <span class="track"></span>
-          <span class="knob">
-            <svg class="icon-off" viewBox="0 0 8 8"><path d="M1 1l6 6M7 1L1 7"/></svg>
-            <svg class="icon-on" viewBox="0 0 8 8"><path d="M1 4.2l2 2L7 1.5"/></svg>
-          </span>
-        </label>
-        <div class="status" id="status"></div>
-      </div>
+      <div class="status" id="status"></div>
       <div class="stage" id="stage">
         <div class="placeholder">
           <div>Paste a YouTube link above to start watching!</div>
@@ -831,7 +908,7 @@
   focusChime.addEventListener('timeupdate', () => {
     const left = FOCUS_CHIME_SECONDS - focusChime.currentTime;
     if (left <= 0) focusChime.pause();
-    else focusChime.volume = Math.min(1, left / FOCUS_CHIME_FADE);
+    else focusChime.volume = alarmLevel() * Math.min(1, left / FOCUS_CHIME_FADE);
   });
   let audioCtx = null;
 
@@ -845,10 +922,16 @@
     }
   }
 
+  // The alarm volume setting as 0–1.
+  function alarmLevel() {
+    return settings.alarmVolume / 100;
+  }
+
   function playChime(finishedPhase) {
+    alarmPreviewing = false;   // a real alarm takes over from a preview
     if (finishedPhase === 'focus') {
       focusChime.currentTime = 0;
-      focusChime.volume = 1;
+      focusChime.volume = alarmLevel();
       focusChime.play().catch(playSynthChime);
     } else {
       playSynthChime();
@@ -856,7 +939,8 @@
   }
 
   function playSynthChime() {
-    if (!audioCtx) return;
+    const peak = 0.25 * alarmLevel();
+    if (!audioCtx || peak <= 0) return;   // an exponential ramp can't reach 0
     const now = audioCtx.currentTime;
     [660, 880, 1320].forEach((freq, i) => {
       const osc = audioCtx.createOscillator();
@@ -865,7 +949,7 @@
       osc.type = 'sine';
       osc.frequency.value = freq;
       gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t + 0.02);
       gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
       osc.connect(gain).connect(audioCtx.destination);
       osc.start(t);
@@ -950,18 +1034,45 @@
     return null;
   }
 
-  /* ---------- Pause video between timers ---------- */
-  // A YouTube embed with enablejsapi=1 takes commands over postMessage. Pausing an
-  // already-paused video does nothing, so there's no need to track its state.
+  /* ---------- Controlling the player ---------- */
+  // A YouTube embed with enablejsapi=1 takes commands over postMessage.
+  function ytCommand(func, args = []) {
+    const frame = stage.querySelector('iframe[data-youtube]');
+    frame?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), '*');
+  }
+
+  // A freshly loaded player ignores commands until it's ready. Saying "listening"
+  // until it answers tells us when it is, so the saved volume can be applied then.
+  let ytHelloTimer = null;
+  function ytAwaitReady(frame) {
+    let tries = 0;
+    clearInterval(ytHelloTimer);
+    ytHelloTimer = setInterval(() => {
+      if (++tries > 40 || !frame.isConnected) return clearInterval(ytHelloTimer);
+      frame.contentWindow?.postMessage(JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }), '*');
+    }, 250);
+  }
+
+  window.addEventListener('message', e => {
+    const frame = stage.querySelector('iframe[data-youtube]');
+    if (!frame || e.source !== frame.contentWindow) return;
+    let data;
+    try { data = JSON.parse(e.data); } catch (err) { return; }
+    if (data.event === 'onReady' || data.event === 'initialDelivery') {
+      clearInterval(ytHelloTimer);
+      applyVideoVolume();
+    }
+  });
+
+  // Pausing an already-paused video does nothing, so there's no need to track its state.
   const pauseToggle = document.getElementById('viewerToggle');
 
   // Called when a timer runs out. The video stays paused until the user plays it again.
   function pauseViewer() {
     if (!pauseToggle.checked) return;
     const video = stage.querySelector('video');
-    const ytFrame = stage.querySelector('iframe[data-youtube]');
     if (video) video.pause();
-    else ytFrame?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
+    else ytCommand('pauseVideo');
   }
 
   function showFrame(src, { sandboxed, youtube = false }) {
@@ -972,7 +1083,10 @@
     frame.referrerPolicy = 'strict-origin-when-cross-origin';
     // Unknown sites are sandboxed so they can't navigate this page away.
     if (sandboxed) frame.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups allow-presentation';
-    if (youtube) frame.dataset.youtube = '';
+    if (youtube) {
+      frame.dataset.youtube = '';
+      frame.addEventListener('load', () => ytAwaitReady(frame));
+    }
     stage.replaceChildren(frame);
   }
 
@@ -981,6 +1095,7 @@
     video.src = src;
     video.controls = true;
     video.autoplay = true;
+    video.volume = settings.videoVolume / 100;
     video.addEventListener('error', () => setStatus("That video couldn't be played. The link may be broken or in an unsupported format.", true));
     stage.replaceChildren(video);
   }
@@ -1043,6 +1158,77 @@
     setStatus('');
     try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* storage unavailable */ }
     urlInput.focus();
+  });
+
+  /* =====================================================================
+     Settings
+     ===================================================================== */
+  const SETTINGS_KEY = 'pomodoro:settings';
+  const settingsBtn = document.getElementById('settingsBtn');
+  const settingsPop = document.getElementById('settingsPop');
+
+  // Volumes are 0–100 and remembered between visits.
+  const settings = { alarmVolume: 100, videoVolume: 100 };
+  try {
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {};
+    for (const key of Object.keys(settings)) {
+      if (Number.isFinite(saved[key])) settings[key] = Math.min(100, Math.max(0, saved[key]));
+    }
+  } catch (e) { /* storage unavailable or corrupt */ }
+
+  function saveSettings() {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* storage unavailable */ }
+  }
+
+  function applyVideoVolume() {
+    const video = stage.querySelector('video');
+    if (video) video.volume = settings.videoVolume / 100;
+    else ytCommand('setVolume', [settings.videoVolume]);
+  }
+
+  // Wires a slider to its setting; onInput runs as it's dragged.
+  function bindVolume(key, inputId, outputId, onInput) {
+    const input = document.getElementById(inputId);
+    const output = document.getElementById(outputId);
+    input.value = settings[key];
+    output.textContent = `${settings[key]}%`;
+    input.addEventListener('input', () => {
+      settings[key] = Number(input.value);
+      output.textContent = `${settings[key]}%`;
+      onInput?.();
+      saveSettings();
+    });
+    return input;
+  }
+
+  // Letting go of the alarm slider plays the chime at the new level; closing the card stops it.
+  let alarmPreviewing = false;
+  bindVolume('alarmVolume', 'alarmVolume', 'alarmVolumeOut').addEventListener('change', () => {
+    ensureAudio();
+    playChime('focus');
+    alarmPreviewing = true;
+  });
+  bindVolume('videoVolume', 'videoVolume', 'videoVolumeOut', applyVideoVolume);
+
+  function setSettingsOpen(open) {
+    if (!open && alarmPreviewing) {
+      focusChime.pause();
+      alarmPreviewing = false;
+    }
+    settingsPop.hidden = !open;
+    settingsBtn.setAttribute('aria-expanded', String(open));
+  }
+
+  settingsBtn.addEventListener('click', () => setSettingsOpen(settingsPop.hidden));
+  // Clicking anywhere outside the card closes it.
+  document.addEventListener('pointerdown', e => {
+    if (settingsPop.hidden || settingsPop.contains(e.target) || settingsBtn.contains(e.target)) return;
+    setSettingsOpen(false);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || settingsPop.hidden) return;
+    setSettingsOpen(false);
+    settingsBtn.focus();
   });
 
   /* ---------- Init ---------- */
