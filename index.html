@@ -118,7 +118,8 @@
     aspect-ratio: 1;
     margin-top: 4px;
   }
-  .ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  /* overflow: visible so the ring, dot and filled circle's glows aren't clipped at the svg's edge */
+  .ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
   .ring-track { fill: none; stroke: rgba(255, 255, 255, 0.07); stroke-width: 10; }
   .ring-progress {
     fill: none;
