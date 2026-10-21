@@ -20,10 +20,6 @@ export default function TimerPanel({ onFinish, settings, onSettingChange, pauseV
     document.body.classList.toggle('ready', awaitingNext !== null);
   }, [phase, running, awaitingNext]);
 
-  useEffect(() => {
-    document.title = `${text} · ${label}`;
-  }, [text, label]);
-
   const startNext = () => {
     ensureAudio();
     act('startNext');
