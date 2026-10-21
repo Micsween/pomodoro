@@ -6,12 +6,11 @@
 <title>Pomodoro</title>
 <style>
   :root {
-    --bg-0: #07070d;
-    --bg-1: #10101c;
+    --bg-0: #111111;
     --panel: rgba(255, 255, 255, 0.045);
     --panel-border: rgba(255, 255, 255, 0.09);
-    --text: #eceaf5;
-    --muted: #8d8aa3;
+    --text: #ececec;
+    --muted: #8c8c8c;
     --accent: #00b4d8;
     --accent-2: #90e0ef;
     --radius: 22px;
@@ -89,7 +88,7 @@
   .phases button:hover { color: var(--text); }
   .phases button.active {
     background: var(--accent);
-    color: #0b0b12;
+    color: #0b0b0b;
     font-weight: 600;
   }
 
@@ -190,12 +189,12 @@
   .btn.ready-btn {
     display: none;
     pointer-events: auto;
-    background: #2a2936;
+    background: #2a2a2a;
     font-size: 16px;
     padding: 12px 26px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
   }
-  .btn.ready-btn:hover { background: #353443; }
+  .btn.ready-btn:hover { background: #353535; }
   body.ready .ready-btn { display: block; }
 
   body.running .time { animation: breathe 4s ease-in-out infinite; }
@@ -223,7 +222,7 @@
     border: 0;
     font-weight: 700;
     font-size: 15px;
-    color: #0b0b12;
+    color: #0b0b0b;
     background: linear-gradient(135deg, var(--accent), var(--accent-2));
   }
 
@@ -345,7 +344,7 @@
     min-height: 300px;
     border-radius: 16px;
     overflow: hidden;
-    background: #000;
+    background: #232323;
     border: 1px solid var(--panel-border);
   }
   .stage iframe, .stage video {
@@ -367,7 +366,7 @@
     color: var(--muted);
     text-align: center;
     padding: 24px;
-    background: #05050a;
+    background: #232323;
   }
 
   @media (max-width: 860px) {
