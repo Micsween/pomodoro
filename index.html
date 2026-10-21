@@ -622,6 +622,7 @@
     const finished = state.phase;
     if (finished === 'focus') state.completedFocus++;
     playChime(finished);
+    pauseViewer();
     pauseTimer();
     state.remainingMs = 0;
     state.awaitingNext = nextPhaseAfter(finished, state.completedFocus);   // already counts this one
@@ -952,7 +953,8 @@
     }
 
     const list = url.searchParams.get('list');
-    const params = new URLSearchParams({ autoplay: '1', rel: '0' });
+    // enablejsapi lets the page pause the player with postMessage.
+    const params = new URLSearchParams({ autoplay: '1', rel: '0', enablejsapi: '1' });
     const start = parseStartTime(url.searchParams.get('t') || url.searchParams.get('start'));
     if (start) params.set('start', String(start));
 
@@ -967,7 +969,21 @@
     return null;
   }
 
-  function showFrame(src, { sandboxed }) {
+  /* ---------- Pause video between timers ---------- */
+  // A YouTube embed with enablejsapi=1 takes commands over postMessage. Pausing an
+  // already-paused video does nothing, so there's no need to track its state.
+  const pauseToggle = document.getElementById('viewerToggle');
+
+  // Called when a timer runs out. The video stays paused until the user plays it again.
+  function pauseViewer() {
+    if (!pauseToggle.checked) return;
+    const video = stage.querySelector('video');
+    const ytFrame = stage.querySelector('iframe[data-youtube]');
+    if (video) video.pause();
+    else ytFrame?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
+  }
+
+  function showFrame(src, { sandboxed, youtube = false }) {
     const frame = document.createElement('iframe');
     frame.src = src;
     frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen';
@@ -975,6 +991,7 @@
     frame.referrerPolicy = 'strict-origin-when-cross-origin';
     // Unknown sites are sandboxed so they can't navigate this page away.
     if (sandboxed) frame.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups allow-presentation';
+    if (youtube) frame.dataset.youtube = '';
     stage.replaceChildren(frame);
   }
 
@@ -1008,7 +1025,7 @@
     const embed = youtubeEmbedUrl(url);
 
     if (embed) {
-      showFrame(embed, { sandboxed: false });
+      showFrame(embed, { sandboxed: false, youtube: true });
       setStatus(location.protocol === 'file:'
         ? 'Playing from YouTube. If you see "Error 153", open this page through a local server instead of as a file.'
         : 'Playing from YouTube.');
