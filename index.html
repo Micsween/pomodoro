@@ -927,20 +927,11 @@
   ringSvg.addEventListener('pointercancel', endDrag);
 
   /* ---------- Chimes ---------- */
-  // Focus sessions end with a wind chime recording; breaks end with a short
+  // Focus sessions end with a chime recording; breaks end with a short
   // synthesized chime (also the fallback if the recording can't play).
   // An <audio> element is used rather than fetch(), which file:// pages can't do.
-  const focusChime = new Audio('sounds/windchime.mp3');
+  const focusChime = new Audio('sounds/chime.mp3');
   focusChime.preload = 'auto';
-  const FOCUS_CHIME_SECONDS = 3;   // the recording runs 12 s; cut it here
-  const FOCUS_CHIME_FADE = 1;      // fade out over the last 1 s so it doesn't clip
-
-  // timeupdate keeps firing in background tabs, unlike throttled timers.
-  focusChime.addEventListener('timeupdate', () => {
-    const left = FOCUS_CHIME_SECONDS - focusChime.currentTime;
-    if (left <= 0) focusChime.pause();
-    else focusChime.volume = alarmLevel() * Math.min(1, left / FOCUS_CHIME_FADE);
-  });
   let audioCtx = null;
 
   // Browsers only allow audio after a user gesture, so this is called from Start.
@@ -1238,7 +1229,7 @@
 
   // Letting go of the alarm slider plays the chime at the new level; closing the card stops it.
   let alarmPreviewing = false;
-  bindVolume('alarmVolume', 'alarmVolume', 'alarmVolumeOut').addEventListener('change', () => {
+  bindVolume('alarmVolume', 'alarmVolume', 'alarmVolumeOut', () => { focusChime.volume = alarmLevel(); }).addEventListener('change', () => {
     ensureAudio();
     playChime('focus');
     alarmPreviewing = true;
