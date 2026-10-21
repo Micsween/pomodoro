@@ -31,25 +31,6 @@
     overflow-x: hidden;
   }
 
-  /* Slow-drifting glow blobs behind everything */
-  .glow {
-    position: fixed;
-    width: 55vmax;
-    height: 55vmax;
-    border-radius: 50%;
-    filter: blur(110px);
-    opacity: 0.22;
-    pointer-events: none;
-    transition: background 1.2s ease;
-    z-index: 0;
-  }
-  .glow.a { background: var(--accent); top: -22vmax; left: -14vmax; animation: drift 26s ease-in-out infinite alternate; }
-  .glow.b { background: var(--accent-2); bottom: -26vmax; right: -16vmax; animation: drift 32s ease-in-out infinite alternate-reverse; }
-  @keyframes drift {
-    from { transform: translate(0, 0) scale(1); }
-    to   { transform: translate(6vmax, 4vmax) scale(1.15); }
-  }
-
   .app {
     position: relative;
     z-index: 1;
@@ -274,7 +255,7 @@
   }
 
   /* ---------- Viewer ---------- */
-  /* Opaque version of the panel tint, so the glow blobs don't show through */
+  /* Opaque version of the panel tint */
   .viewer {
     background: color-mix(in srgb, #fff 4.5%, var(--bg-0));
     display: flex;
@@ -397,13 +378,11 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .glow, body.running .time { animation: none; }
+    body.running .time { animation: none; }
   }
 </style>
 </head>
 <body data-phase="focus">
-  <div class="glow a"></div>
-  <div class="glow b"></div>
 
   <main class="app">
     <section class="panel timer">
